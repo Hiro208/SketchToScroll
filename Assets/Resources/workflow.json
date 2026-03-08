@@ -183,7 +183,7 @@
     },
     "27": {
       "inputs": {
-        "image": "Paint_12.png",
+        "image": "__UNITY_IMAGE_NAME__",
         "upload": "image"
       },
       "class_type": "LoadImage",

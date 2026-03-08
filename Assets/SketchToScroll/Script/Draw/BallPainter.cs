@@ -1,87 +1,125 @@
-﻿using UnityEngine;
+using UnityEngine;
 
+/// <summary>
+/// Uses a sphere-like object as a brush to paint onto a board managed by <see cref="BoardPaintManager"/>.
+/// When the ball stays inside the paint zone, it raycasts towards the board and draws along its path.
+/// </summary>
+[RequireComponent(typeof(Collider))]
 public class BallPainter : MonoBehaviour
 {
-    public BoardPaintManager boardManager; 
+    [Header("Board")]
+    [Tooltip("Board manager that provides the drawable texture and renderer.")]
+    public BoardPaintManager boardManager;
+
+    [Header("Painting Zone")]
+    [Tooltip("Trigger collider that enables painting when the ball is inside.")]
     public Collider paintZoneTrigger;
+
+    [Header("Brush Settings")]
     public Color paintColor = Color.red;
+
+    [Min(1)]
     public int brushSize = 8;
 
-    private bool canPaint = false;
-    private Vector2? lastUV = null;
+    private bool canPaint;
+    private Vector2? lastUV;
 
-    void Update()
+    private void Update()
     {
-        if (canPaint)
+        if (!canPaint)
         {
-            Vector3 paintDir = boardManager.boardRenderer.transform.TransformDirection(Vector3.down);
-            Ray ray = new Ray(transform.position, paintDir);
+            lastUV = null;
+            return;
+        }
 
-            if (Physics.Raycast(ray, out RaycastHit hit, 2.0f))
-            {
-                if (hit.collider.gameObject == boardManager.boardRenderer.gameObject)
-                {
-                    Vector2 currentUV = hit.textureCoord;
+        if (boardManager == null || boardManager.boardRenderer == null || boardManager.drawTexture == null)
+        {
+            Debug.LogWarning($"{nameof(BallPainter)} on '{name}' is enabled but missing board references.", this);
+            return;
+        }
 
-                    if (lastUV != null)
-                    {
-                        DrawInterpolated(lastUV.Value, currentUV);
-                    }
-                    else
-                    {
-                        DrawAtUV(currentUV);
-                    }
+        var boardTransform = boardManager.boardRenderer.transform;
+        var paintDirection = boardTransform.TransformDirection(Vector3.down);
+        var ray = new Ray(transform.position, paintDirection);
 
-                    lastUV = currentUV;
-                }
-            }
+        if (!Physics.Raycast(ray, out var hit, 2.0f))
+        {
+            return;
+        }
+
+        if (hit.collider.gameObject != boardManager.boardRenderer.gameObject)
+        {
+            return;
+        }
+
+        var currentUV = hit.textureCoord;
+
+        if (lastUV.HasValue)
+        {
+            DrawInterpolated(lastUV.Value, currentUV);
         }
         else
         {
-            lastUV = null;
+            DrawAtUV(currentUV);
         }
+
+        lastUV = currentUV;
     }
 
-    void DrawInterpolated(Vector2 fromUV, Vector2 toUV)
+    private void DrawInterpolated(Vector2 fromUV, Vector2 toUV)
     {
-        int steps = Mathf.CeilToInt(Vector2.Distance(fromUV, toUV) * boardManager.drawTexture.width * 2);
-        for (int i = 0; i <= steps; i++)
+        var texture = boardManager.drawTexture;
+        if (texture == null)
         {
-            float t = i / (float)steps;
-            Vector2 interpolatedUV = Vector2.Lerp(fromUV, toUV, t);
+            return;
+        }
+
+        var distance = Vector2.Distance(fromUV, toUV);
+        var steps = Mathf.CeilToInt(distance * texture.width * 2);
+
+        for (var i = 0; i <= steps; i++)
+        {
+            var t = i / (float)steps;
+            var interpolatedUV = Vector2.Lerp(fromUV, toUV, t);
             DrawAtUV(interpolatedUV);
         }
     }
 
-    void DrawAtUV(Vector2 uv)
+    private void DrawAtUV(Vector2 uv)
     {
         var drawTexture = boardManager.drawTexture;
-
-        int x = (int)(uv.x * drawTexture.width);
-        int y = (int)(uv.y * drawTexture.height);
-
-        for (int i = -brushSize; i <= brushSize; i++)
+        if (drawTexture == null)
         {
-            for (int j = -brushSize; j <= brushSize; j++)
-            {
-                float dist = Mathf.Sqrt(i * i + j * j);
-                if (dist <= brushSize)
-                {
-                    int px = Mathf.Clamp(x + i, 0, drawTexture.width - 1);
-                    int py = Mathf.Clamp(y + j, 0, drawTexture.height - 1);
+            return;
+        }
 
-                    float alpha = 1f - (dist / brushSize);
-                    Color existingColor = drawTexture.GetPixel(px, py);
-                    Color blendedColor = Color.Lerp(existingColor, paintColor, alpha);
-                    drawTexture.SetPixel(px, py, blendedColor);
+        var x = (int)(uv.x * drawTexture.width);
+        var y = (int)(uv.y * drawTexture.height);
+
+        for (var i = -brushSize; i <= brushSize; i++)
+        {
+            for (var j = -brushSize; j <= brushSize; j++)
+            {
+                var dist = Mathf.Sqrt(i * i + j * j);
+                if (dist > brushSize)
+                {
+                    continue;
                 }
+
+                var px = Mathf.Clamp(x + i, 0, drawTexture.width - 1);
+                var py = Mathf.Clamp(y + j, 0, drawTexture.height - 1);
+
+                var alpha = 1f - (dist / brushSize);
+                var existingColor = drawTexture.GetPixel(px, py);
+                var blendedColor = Color.Lerp(existingColor, paintColor, alpha);
+                drawTexture.SetPixel(px, py, blendedColor);
             }
         }
 
         drawTexture.Apply();
     }
 
-    void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other)
     {
         if (other == paintZoneTrigger)
         {
@@ -89,7 +127,7 @@ public class BallPainter : MonoBehaviour
         }
     }
 
-    void OnTriggerExit(Collider other)
+    private void OnTriggerExit(Collider other)
     {
         if (other == paintZoneTrigger)
         {
