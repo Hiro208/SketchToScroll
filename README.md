@@ -4,6 +4,15 @@
 
 ---
 
+## Demo
+
+
+https://github.com/user-attachments/assets/0bdb74a2-4662-4324-abe0-60f424e85f74
+
+
+
+---
+
 ## What it does
 
 - **VR sketchboard**: Draw on a virtual board in Quest with a brush-style controller; strokes are captured as a texture.
@@ -22,9 +31,3 @@ End-to-end: **sketch in VR → AI generation → view result in VR**.
 | Drawing | Runtime `Texture2D` on a plane, raycast-based brush, interpolated strokes |
 | AI backend | ComfyUI (local): `/upload/image` + `/prompt` over HTTP; workflow JSON with placeholder for uploaded image name |
 | Result display | Folder polling for latest output image → load as texture onto a mesh in scene |
-
----
-
-## Demo / Showcase
-
-*(Add a short video or screenshots here: Quest user drawing → AI result in VR.)*
