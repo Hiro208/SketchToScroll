@@ -1,6 +1,6 @@
 # SketchToScroll / AI Draw
 
-**Meta Quest VR app**: sketch in-headset → ComfyUI turns it into AI-generated traditional Chinese ink wash painting (水墨画) → results appear back in VR. Goal: low-cost access to that experience without paper, ink, or formal training.
+**Meta Quest VR app**: sketch in-headset → ComfyUI turns it into AI-generated traditional Chinese ink wash painting → results appear back in VR. Goal: low-cost access to that experience without paper, ink, or formal training.
 
 ---
 
